@@ -1,30 +1,23 @@
 name: robot_trading_live
-description: A Flutter project for candlestick chart & trading signals.
-publish_to: "none"
-
+description: A new Flutter project for trading signal & candlestick
+publish_to: 'none' 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # 📊 Chart library
+  cupertino_icons: ^1.0.6
+  http: ^1.1.0
   syncfusion_flutter_charts: ^25.1.35
-
-  # 🌐 HTTP client untuk fetch data Binance
-  http: ^1.2.0
-
-  # Default dependencies
-  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.2
 
 flutter:
   uses-material-design: true
