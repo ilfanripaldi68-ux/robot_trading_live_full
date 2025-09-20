@@ -7,10 +7,13 @@ environment:
   sdk: ">=2.18.0 <4.0.0"
 
 dependencies:
-  candlesticks: ^2.1.0
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
   http: ^0.13.6
   flutter_local_notifications: ^17.2.2
-  cupertino_icons: ^1.0.2
+  fl_chart: ^0.68.0   # untuk candlestick chart
+  intl: ^0.18.1       # untuk format tanggal
 
 dev_dependencies:
   flutter_test:
