@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'services/api_service.dart';
 import 'models/ohlc.dart';
+import 'services/api.dart';
 import 'widgets/candlestick_chart.dart';
 
 void main() {
@@ -12,13 +12,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Robot Trading Live',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const HomePage(),
+      home: HomePage(),
     );
   }
 }
@@ -36,7 +32,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    candlesFuture = ApiService.fetchCandles("BTC/USD", "1min", outputSize: 50);
+    candlesFuture = ApiService.fetchCandles("BTC/USD", "1min", outputSize: 30);
   }
 
   @override
@@ -53,11 +49,10 @@ class _HomePageState extends State<HomePage> {
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No data available"));
+            return const Center(child: Text("No data found"));
           }
 
-          final candles = snapshot.data!;
-          return CandlestickChart(candles: candles);
+          return CandlestickChart(candles: snapshot.data!);
         },
       ),
     );
