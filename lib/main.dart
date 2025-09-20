@@ -13,9 +13,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Robot Trading Live',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
+        primarySwatch: Colors.blue,
       ),
       home: const HomePage(),
     );
@@ -30,54 +31,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String symbol = "EUR/USD";
+  late Future<List<Ohlc>> candlesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    candlesFuture = ApiService.fetchCandles("BTC/USD", "1min", outputSize: 50);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Robot Trading Live"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              setState(() {}); // refresh data
-            },
-          ),
-        ],
       ),
-      body: Column(
-        children: [
-          // Dropdown pair
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: DropdownButton<String>(
-              value: symbol,
-              items: const [
-                DropdownMenuItem(
-                    value: "EUR/USD", child: Text("EUR/USD")),
-                DropdownMenuItem(
-                    value: "GBP/USD", child: Text("GBP/USD")),
-                DropdownMenuItem(
-                    value: "USD/JPY", child: Text("USD/JPY")),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  symbol = value!;
-                });
-              },
-            ),
-          ),
+      body: FutureBuilder<List<Ohlc>>(
+        future: candlesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No data available"));
+          }
 
-          // Chart / Error / Loading
-          Expanded(
-            child: FutureBuilder<List<Ohlc>>(
-              future:
-                  ApiService.fetchCandles(symbol, "1min", outputSize: 100),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  re
+          final candles = snapshot.data!;
+          return CandlestickChart(candles: candles);
+        },
+      ),
+    );
+  }
+}
