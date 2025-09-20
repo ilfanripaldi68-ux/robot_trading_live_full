@@ -1,18 +1,25 @@
-// lib/models/ohlc.dart
 class Ohlc {
-  final DateTime time;
+  final DateTime date;
   final double open;
   final double high;
   final double low;
   final double close;
-  final double? volume; // optional
 
   Ohlc({
-    required this.time,
+    required this.date,
     required this.open,
     required this.high,
     required this.low,
     required this.close,
-    this.volume,
   });
+
+  factory Ohlc.fromJson(Map<String, dynamic> json) {
+    return Ohlc(
+      date: DateTime.parse(json['datetime']),
+      open: double.parse(json['open']),
+      high: double.parse(json['high']),
+      low: double.parse(json['low']),
+      close: double.parse(json['close']),
+    );
+  }
 }
