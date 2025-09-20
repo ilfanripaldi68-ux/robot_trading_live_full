@@ -4,7 +4,7 @@ import '../models/ohlc.dart';
 
 class ApiService {
   static const String baseUrl = "https://api.twelvedata.com";
-  static const String apiKey = "6ecef20290274c2aa0cce6a20f3690ee"; // API Key kamu
+  static const String apiKey = "6ecef20290274c2aa0cce6a20f3690ee";
 
   static Future<List<Ohlc>> fetchCandles(
     String symbol,
