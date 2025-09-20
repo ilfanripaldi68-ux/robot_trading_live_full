@@ -1,57 +1,76 @@
-// lib/widgets/trading_chart.dart
 import 'package:flutter/material.dart';
-import '../utils/ohlc.dart';
+import 'package:candlesticks/candlesticks.dart'; // pastikan ini ada
 
-class CandlesPainter extends CustomPainter {
-  final List<Candle> candles;
-  CandlesPainter(this.candles);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (candles.isEmpty) return;
-    final paint = Paint()..style = PaintingStyle.fill;
-    final margin = 8.0;
-    final w = size.width - margin * 2;
-    final h = size.height - margin * 2;
-    final maxPrice = candles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-    final minPrice = candles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-    final priceRange = (maxPrice - minPrice) == 0 ? 1 : (maxPrice - minPrice);
-    final candleWidth = w / candles.length * 0.7;
-
-    for (int i = 0; i < candles.length; i++) {
-      final c = candles[i];
-      final xCenter = margin + (i + 0.5) * (w / candles.length);
-      double y(double price) {
-        final p = (price - minPrice) / priceRange;
-        return margin + (1 - p) * h;
-      }
-      final yHigh = y(c.high);
-      final yLow = y(c.low);
-      final yOpen = y(c.open);
-      final yClose = y(c.close);
-      final wickPaint = Paint()
-        ..color = Colors.black
-        ..strokeWidth = 1.0;
-      canvas.drawLine(Offset(xCenter, yHigh), Offset(xCenter, yLow), wickPaint);
-      final bool bullish = c.close >= c.open;
-      paint.color = bullish ? Colors.green : Colors.red;
-      final rectTop = bullish ? yOpen : yClose;
-      final rectBottom = bullish ? yClose : yOpen;
-      final rect = Rect.fromLTRB(xCenter - candleWidth / 2, rectTop, xCenter + candleWidth / 2, rectBottom);
-      canvas.drawRect(rect, paint);
-    }
-  }
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class CandlestickChart extends StatelessWidget {
-  final List<Candle> candles;
-  const CandlestickChart({super.key, required this.candles});
+class _HomeScreenState extends State<HomeScreen> {
+  // contoh data candlestick (ganti dengan data asli kamu)
+  List<Candle> candles = [
+    Candle(
+      date: DateTime.now(),
+      high: 100,
+      low: 90,
+      open: 95,
+      close: 98,
+      volume: 1000,
+    ),
+    Candle(
+      date: DateTime.now().subtract(const Duration(days: 1)),
+      high: 105,
+      low: 85,
+      open: 90,
+      close: 92,
+      volume: 1200,
+    ),
+  ];
+
+  // contoh hasil analisis indikator
+  Map<String, double> analysis = {
+    'rsi': 56.23,
+    'atr': 0.004562,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: CandlesPainter(candles), size: Size(double.infinity, 300));
+    return Scaffold(
+      appBar: AppBar(title: const Text("Robot Trading Live")),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            // ✅ Perbaikan di sini → tidak ada lagi error koma
+            Text(
+              'RSI: ${(analysis['rsi'] ?? 0).toStringAsFixed(2)} '
+              'ATR: ${(analysis['atr'] ?? 0).toStringAsFixed(6)}',
+              style: const TextStyle(fontSize: 16),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ✅ CandlestickChart sekarang pakai widget Candlesticks dari package
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Candlesticks(candles: candles),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+void main() {
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: HomeScreen(),
+  ));
 }
