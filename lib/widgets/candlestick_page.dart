@@ -1,87 +1,83 @@
-import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../services/api.dart';
-import '../models/ohlc.dart';
+
+class CandleData {
+  final DateTime time;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+
+  CandleData(this.time, this.open, this.high, this.low, this.close);
+}
 
 class CandlestickPage extends StatefulWidget {
-  final String symbol; // contoh: BTCUSDT, ETHUSDT
-  final String interval; // contoh: 1m, 5m, 15m, 1h, 4h, 1d
-
-  const CandlestickPage({
-    Key? key,
-    this.symbol = "BTCUSDT",
-    this.interval = "1m",
-  }) : super(key: key);
+  const CandlestickPage({super.key});
 
   @override
-  _CandlestickPageState createState() => _CandlestickPageState();
+  State<CandlestickPage> createState() => _CandlestickPageState();
 }
 
 class _CandlestickPageState extends State<CandlestickPage> {
-  List<Ohlc> _candles = [];
-  Timer? _timer;
+  List<CandleData> _candles = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
-
-    // ⏳ Auto refresh tiap 1 detik
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _fetchData();
-    });
+    fetchCandles();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  Future<void> fetchCandles() async {
+    final url =
+        "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=50";
 
-  Future<void> _fetchData() async {
-    try {
-      final data = await ApiService.fetchCandles(
-        widget.symbol,
-        widget.interval,
-      );
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      List<CandleData> candles = data.map((e) {
+        return CandleData(
+          DateTime.fromMillisecondsSinceEpoch(e[0]),
+          double.parse(e[1]),
+          double.parse(e[2]),
+          double.parse(e[3]),
+          double.parse(e[4]),
+        );
+      }).toList();
+
       setState(() {
-        _candles = data;
+        _candles = candles;
         _loading = false;
       });
-    } catch (e) {
-      debugPrint("Error fetch candles: $e");
+    } else {
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Candlestick ${widget.symbol}"),
-      ),
+      appBar: AppBar(title: const Text("Candlestick BTCUSDT")),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _candles.isEmpty
-              ? const Center(child: Text("Tidak ada data candlestick"))
-              : SfCartesianChart(
-                  primaryXAxis: DateTimeAxis(),
-                  primaryYAxis: NumericAxis(
-                    opposedPosition: true,
-                    decimalPlaces: 2,
-                  ),
-                  series: <CandleSeries<Ohlc, DateTime>>[
-                    CandleSeries<Ohlc, DateTime>(
-                      dataSource: _candles,
-                      xValueMapper: (Ohlc ohlc, _) => ohlc.date,
-                      lowValueMapper: (Ohlc ohlc, _) => ohlc.low,
-                      highValueMapper: (Ohlc ohlc, _) => ohlc.high,
-                      openValueMapper: (Ohlc ohlc, _) => ohlc.open,
-                      closeValueMapper: (Ohlc ohlc, _) => ohlc.close,
-                    )
-                  ],
-                ),
+          : SfCartesianChart(
+              primaryXAxis: DateTimeAxis(),
+              primaryYAxis: NumericAxis(),
+              series: <CandleSeries>[
+                CandleSeries<CandleData, DateTime>(
+                  dataSource: _candles,
+                  xValueMapper: (CandleData data, _) => data.time,
+                  lowValueMapper: (CandleData data, _) => data.low,
+                  highValueMapper: (CandleData data, _) => data.high,
+                  openValueMapper: (CandleData data, _) => data.open,
+                  closeValueMapper: (CandleData data, _) => data.close,
+                )
+              ],
+            ),
     );
   }
 }
