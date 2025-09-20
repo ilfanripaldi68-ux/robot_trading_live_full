@@ -4,7 +4,7 @@ import '../models/ohlc.dart';
 
 class ApiService {
   static const String _baseUrl = "https://api.twelvedata.com";
-  static const String _apiKey = "MASUKKAN_API_KEY_KAMU"; // ganti dengan API Key dari TwelveData
+  static const String _apiKey = "6ecef20290274c2aa0cce6a20f3690ee"; // ganti dengan API Key dari TwelveData
 
   Future<List<Ohlc>> fetchOhlc({
     required String symbol,
