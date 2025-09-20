@@ -1,7 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:candlesticks/candlesticks.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class CandlestickPage extends StatefulWidget {
   const CandlestickPage({super.key});
@@ -12,18 +13,26 @@ class CandlestickPage extends StatefulWidget {
 
 class _CandlestickPageState extends State<CandlestickPage> {
   List<Candle> candles = [];
-  bool isLoading = true;
-
-  String symbol = "BTCUSDT"; // default pair
-  String interval = "1h";   // default interval
-
-  final List<String> pairs = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT"];
-  final List<String> intervals = ["1m", "5m", "15m", "1h", "1d"];
+  bool isLoading = false;
+  String interval = "1m"; // default interval
+  String symbol = "BTCUSDT";
+  Timer? refreshTimer;
 
   @override
   void initState() {
     super.initState();
     fetchCandles();
+
+    // auto-refresh tiap 1 detik
+    refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      fetchCandles();
+    });
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchCandles() async {
@@ -43,14 +52,14 @@ class _CandlestickPageState extends State<CandlestickPage> {
 
         final newCandles = data.map((e) {
           return Candle(
-            date: DateTime.fromMillisecondsSinceEpoch(e[0]),
+            date: DateTime.fromMillisecondsSinceEpoch(e[0], isUtc: true),
             open: double.parse(e[1]),
             high: double.parse(e[2]),
             low: double.parse(e[3]),
             close: double.parse(e[4]),
             volume: double.parse(e[5]),
           );
-        }).toList();
+        }).toList().reversed.toList();
 
         setState(() {
           candles = newCandles;
@@ -73,37 +82,20 @@ class _CandlestickPageState extends State<CandlestickPage> {
       appBar: AppBar(
         title: Text("Candlestick $symbol"),
         actions: [
-          // Dropdown untuk pilih pair
-          DropdownButton<String>(
-            value: symbol,
-            items: pairs.map((String val) {
-              return DropdownMenuItem<String>(
-                value: val,
-                child: Text(val),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  symbol = value;
-                });
-                fetchCandles();
-              }
-            },
-          ),
-          // Dropdown untuk pilih interval
           DropdownButton<String>(
             value: interval,
-            items: intervals.map((String val) {
-              return DropdownMenuItem<String>(
-                value: val,
-                child: Text(val),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
+            items: const [
+              DropdownMenuItem(value: "1m", child: Text("1m")),
+              DropdownMenuItem(value: "5m", child: Text("5m")),
+              DropdownMenuItem(value: "15m", child: Text("15m")),
+              DropdownMenuItem(value: "1h", child: Text("1h")),
+              DropdownMenuItem(value: "4h", child: Text("4h")),
+              DropdownMenuItem(value: "1d", child: Text("1d")),
+            ],
+            onChanged: (val) {
+              if (val != null) {
                 setState(() {
-                  interval = value;
+                  interval = val;
                 });
                 fetchCandles();
               }
@@ -111,7 +103,7 @@ class _CandlestickPageState extends State<CandlestickPage> {
           ),
         ],
       ),
-      body: isLoading
+      body: isLoading && candles.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : candles.isEmpty
               ? const Center(child: Text("Tidak ada data candlestick"))
