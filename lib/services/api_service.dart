@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../utils/ohlc.dart';
 
 class ApiService {
-  static const String _apiKey = "011b86a016224bd4a0a100d565d4ea3f"; // ganti kalau perlu
+  static const String _apiKey = "3e94e14fdcf04d51864a4d505a071d4e"; // ganti kalau perlu
   static const String _baseUrl = "https://api.twelvedata.com";
 
   static Future<List<Ohlc>> fetchCandles(String symbol, String interval, {int outputSize = 100}) async {
