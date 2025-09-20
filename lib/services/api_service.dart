@@ -1,42 +1,35 @@
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../utils/ohlc.dart';
 
 class ApiService {
-  static const String _apiKey = "2444d7e7875a4365a357f4d6149ae63c"; 
   static const String _baseUrl = "https://api.twelvedata.com";
+  static const String _apiKey = "48863dadd04b4f2a9fc60ba5a69790c3"; // <- cek lagi bener
 
-  static Future<List<Ohlc>> fetchCandles(String symbol, String interval, {int outputSize = 100}) async {
-    final url = Uri.parse("$_baseUrl/time_series?symbol=$symbol&interval=$interval&outputsize=$outputSize&format=JSON&apikey=$_apiKey");
-    final res = await http.get(url);
+  static Future<Map<String, dynamic>?> getTimeSeries(String symbol) async {
+    try {
+      final s = symbol.replaceAll("/", ""); // EUR/USD -> EURUSD
+      final url = Uri.parse("$_baseUrl/time_series?symbol=$s&interval=1min&apikey=$_apiKey");
 
-    print("API URL: $url");
-    print("Response: ${res.body}");
+      print("🔗 Request URL: $url"); // log url
+      final response = await http.get(url);
 
-    if (res.statusCode == 200) {
-      final j = jsonDecode(res.body);
+      print("📩 Response status: ${response.statusCode}");
+      print("📩 Response body: ${response.body}");
 
-      if (j['status'] == 'error') {
-        throw Exception('API error: ${j['message']}');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data["status"] == "error") {
+          print("❌ API Error: ${data["message"]}");
+          return null;
+        }
+        return data;
+      } else {
+        print("❌ HTTP Error: ${response.statusCode}");
+        return null;
       }
-
-      if (j['values'] == null) {
-        throw Exception('No values in response: $j');
-      }
-
-      final List vals = j['values'];
-      final List<Ohlc> candles = vals.map((v) => Ohlc(
-        DateTime.parse(v['datetime']),
-        double.parse(v['open']),
-        double.parse(v['high']),
-        double.parse(v['low']),
-        double.parse(v['close']),
-      )).toList().reversed.toList();
-
-      return candles;
-    } else {
-      throw Exception('HTTP ${res.statusCode}: ${res.body}');
+    } catch (e) {
+      print("⚠️ Exception: $e");
+      return null;
     }
   }
 }
