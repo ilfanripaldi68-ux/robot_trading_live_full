@@ -1,36 +1,38 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/ohlc.dart';
 
 class ApiService {
-  static const String baseUrl = "https://api.twelvedata.com";
-  static const String apiKey = "6ecef20290274c2aa0cce6a20f3690ee";
+  final String baseUrl = "https://api.binance.com";
 
-  static Future<List<Ohlc>> fetchCandles(
-    String symbol,
-    String interval, {
-    int outputSize = 30,
+  /// Ambil data candlestick
+  Future<List<Map<String, dynamic>>> fetchCandlestickData({
+    String symbol = "BTCUSDT",
+    String interval = "1m",
+    int limit = 50,
   }) async {
     final url = Uri.parse(
-      "$baseUrl/time_series?symbol=$symbol&interval=$interval&outputsize=$outputSize&apikey=$apiKey",
-    );
+        "$baseUrl/api/v3/klines?symbol=$symbol&interval=$interval&limit=$limit");
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      List<dynamic> data = jsonDecode(response.body);
 
-      if (data["values"] != null) {
-        return (data["values"] as List)
-            .map((item) => Ohlc.fromJson(item))
-            .toList()
-            .reversed
-            .toList();
-      } else {
-        throw Exception("No data found");
-      }
+      // Convert array Binance ke format map
+      return data.map((e) {
+        return {
+          "openTime": e[0],
+          "open": double.parse(e[1]),
+          "high": double.parse(e[2]),
+          "low": double.parse(e[3]),
+          "close": double.parse(e[4]),
+          "volume": double.parse(e[5]),
+          "closeTime": e[6],
+        };
+      }).toList();
     } else {
-      throw Exception("Failed to fetch data: ${response.statusCode}");
+      throw Exception(
+          "Gagal load data candlestick: ${response.statusCode} - ${response.body}");
     }
   }
 }
