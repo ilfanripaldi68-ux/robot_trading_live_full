@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:candlesticks/candlesticks.dart';
 
 class ApiService {
-  final String baseUrl = "https://api.binance.com";
+  static const String baseUrl = "https://api.binance.com";
 
-  /// Ambil data candlestick
-  Future<List<Map<String, dynamic>>> fetchCandlestickData({
+  static Future<List<Candle>> fetchCandlestickData({
     String symbol = "BTCUSDT",
     String interval = "1m",
-    int limit = 50,
+    int limit = 100,
   }) async {
     final url = Uri.parse(
         "$baseUrl/api/v3/klines?symbol=$symbol&interval=$interval&limit=$limit");
@@ -18,17 +18,15 @@ class ApiService {
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
 
-      // Convert array Binance ke format map
       return data.map((e) {
-        return {
-          "openTime": e[0],
-          "open": double.parse(e[1]),
-          "high": double.parse(e[2]),
-          "low": double.parse(e[3]),
-          "close": double.parse(e[4]),
-          "volume": double.parse(e[5]),
-          "closeTime": e[6],
-        };
+        return Candle(
+          date: DateTime.fromMillisecondsSinceEpoch(e[0]),
+          open: double.parse(e[1]),
+          high: double.parse(e[2]),
+          low: double.parse(e[3]),
+          close: double.parse(e[4]),
+          volume: double.parse(e[5]),
+        );
       }).toList();
     } else {
       throw Exception(
