@@ -14,9 +14,10 @@ class _CandlestickPageState extends State<CandlestickPage> {
   List<Candle> candles = [];
   bool isLoading = true;
 
-  String symbol = "BTCUSDT";
-  String interval = "1h";
+  String symbol = "BTCUSDT"; // default pair
+  String interval = "1h";   // default interval
 
+  final List<String> pairs = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT"];
   final List<String> intervals = ["1m", "5m", "15m", "1h", "1d"];
 
   @override
@@ -72,6 +73,25 @@ class _CandlestickPageState extends State<CandlestickPage> {
       appBar: AppBar(
         title: Text("Candlestick $symbol"),
         actions: [
+          // Dropdown untuk pilih pair
+          DropdownButton<String>(
+            value: symbol,
+            items: pairs.map((String val) {
+              return DropdownMenuItem<String>(
+                value: val,
+                child: Text(val),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  symbol = value;
+                });
+                fetchCandles();
+              }
+            },
+          ),
+          // Dropdown untuk pilih interval
           DropdownButton<String>(
             value: interval,
             items: intervals.map((String val) {
