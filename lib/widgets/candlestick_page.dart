@@ -1,78 +1,83 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:candlesticks/candlesticks.dart';
 import 'package:http/http.dart' as http;
+import 'package:syncfusion_flutter_charts/charts.dart';
+
+class Candle {
+  final DateTime time;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double volume;
+
+  Candle({
+    required this.time,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+}
 
 class CandlestickPage extends StatefulWidget {
-  const CandlestickPage({super.key});
+  final String symbol;
+  final String interval;
+
+  const CandlestickPage({
+    super.key,
+    required this.symbol,
+    required this.interval,
+  });
 
   @override
   State<CandlestickPage> createState() => _CandlestickPageState();
 }
 
 class _CandlestickPageState extends State<CandlestickPage> {
-  List<Candle> candles = [];
-  bool isLoading = false;
-  String interval = "1m"; // default interval
-  String symbol = "BTCUSDT";
-  Timer? refreshTimer;
+  List<Candle> _candles = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     fetchCandles();
-
-    // auto-refresh tiap 1 detik
-    refreshTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      fetchCandles();
-    });
-  }
-
-  @override
-  void dispose() {
-    refreshTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> fetchCandles() async {
-    setState(() {
-      isLoading = true;
-    });
-
     final uri = Uri.parse(
-      "https://api.binance.com/api/v3/klines?symbol=$symbol&interval=$interval&limit=100",
-    );
-
+        'https://api.binance.com/api/v3/klines?symbol=${widget.symbol}&interval=${widget.interval}&limit=100');
     try {
       final res = await http.get(uri);
 
+      debugPrint("Status: ${res.statusCode}");
+      debugPrint("Body: ${res.body.substring(0, 200)}...");
+
       if (res.statusCode == 200) {
         final data = json.decode(res.body) as List;
-
-        final newCandles = data.map((e) {
+        final candles = data.map((e) {
           return Candle(
-            date: DateTime.fromMillisecondsSinceEpoch(e[0], isUtc: true),
-            open: double.parse(e[1]),
-            high: double.parse(e[2]),
-            low: double.parse(e[3]),
-            close: double.parse(e[4]),
-            volume: double.parse(e[5]),
+            time: DateTime.fromMillisecondsSinceEpoch(e[0]),
+            open: (e[1] as String).isNotEmpty ? double.parse(e[1]) : 0,
+            high: (e[2] as String).isNotEmpty ? double.parse(e[2]) : 0,
+            low: (e[3] as String).isNotEmpty ? double.parse(e[3]) : 0,
+            close: (e[4] as String).isNotEmpty ? double.parse(e[4]) : 0,
+            volume: (e[5] as String).isNotEmpty ? double.parse(e[5]) : 0,
           );
-        }).toList().reversed.toList();
+        }).toList();
 
         setState(() {
-          candles = newCandles;
-          isLoading = false;
+          _candles = candles;
+          _loading = false;
         });
       } else {
-        throw Exception("Gagal ambil data Binance");
+        debugPrint("Error response: ${res.body}");
+        setState(() => _loading = false);
       }
     } catch (e) {
-      debugPrint("Error fetchCandles: $e");
-      setState(() {
-        isLoading = false;
-      });
+      debugPrint("Exception: $e");
+      setState(() => _loading = false);
     }
   }
 
@@ -80,34 +85,12 @@ class _CandlestickPageState extends State<CandlestickPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Candlestick $symbol"),
-        actions: [
-          DropdownButton<String>(
-            value: interval,
-            items: const [
-              DropdownMenuItem(value: "1m", child: Text("1m")),
-              DropdownMenuItem(value: "5m", child: Text("5m")),
-              DropdownMenuItem(value: "15m", child: Text("15m")),
-              DropdownMenuItem(value: "1h", child: Text("1h")),
-              DropdownMenuItem(value: "4h", child: Text("4h")),
-              DropdownMenuItem(value: "1d", child: Text("1d")),
-            ],
-            onChanged: (val) {
-              if (val != null) {
-                setState(() {
-                  interval = val;
-                });
-                fetchCandles();
-              }
-            },
-          ),
-        ],
+        title: Text("Candlestick ${widget.symbol}"),
       ),
-      body: isLoading && candles.isEmpty
+      body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : candles.isEmpty
+          : _candles.isEmpty
               ? const Center(child: Text("Tidak ada data candlestick"))
-              : Candlesticks(candles: candles),
-    );
-  }
-}
+              : SfCartesianChart(
+                  primaryXAxis: DateTimeAxis(),
+                  series: <CandleSeries>
