@@ -15,11 +15,11 @@ class Ohlc {
 
   factory Ohlc.fromJson(Map<String, dynamic> json) {
     return Ohlc(
-      time: json['datetime'],
-      open: double.parse(json['open']),
-      high: double.parse(json['high']),
-      low: double.parse(json['low']),
-      close: double.parse(json['close']),
+      time: json['datetime'] ?? "",
+      open: double.tryParse(json['open'].toString()) ?? 0.0,
+      high: double.tryParse(json['high'].toString()) ?? 0.0,
+      low: double.tryParse(json['low'].toString()) ?? 0.0,
+      close: double.tryParse(json['close'].toString()) ?? 0.0,
     );
   }
 }
