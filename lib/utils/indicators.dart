@@ -30,7 +30,7 @@ double rsi(List<double> closes, {int period = 14}) {
   return 100 - (100 / (1 + rs));
 }
 
-double atr(List<Candle> candles, {int period = 14}) {
+double atr(List<Ohlc> candles, {int period = 14}) {
   if (candles.length < period + 1) return 0;
   List<double> trs = [];
   for (int i = candles.length - period; i < candles.length; i++) {
@@ -43,7 +43,8 @@ double atr(List<Candle> candles, {int period = 14}) {
   return trs.reduce((a, b) => a + b) / trs.length;
 }
 
-Map<String, dynamic> analyze(List<Candle> candles) {
+// combined signal & TP/SL calculation
+Map<String, dynamic> analyze(List<Ohlc> candles) {
   if (candles.length < 20) return {'signal': 'WAIT'};
   final closes = candles.map((c) => c.close).toList();
   final double sma5 = sma(closes, 5);
