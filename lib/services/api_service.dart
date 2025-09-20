@@ -3,20 +3,18 @@ import 'package:http/http.dart' as http;
 import 'package:candlesticks/candlesticks.dart';
 
 class ApiService {
-  static const String baseUrl = "https://api.binance.com";
+  static const String baseUrl = "https://api.binance.com/api/v3/klines";
 
-  static Future<List<Candle>> fetchCandlestickData({
-    String symbol = "BTCUSDT",
-    String interval = "1m",
-    int limit = 100,
-  }) async {
-    final url = Uri.parse(
-        "$baseUrl/api/v3/klines?symbol=$symbol&interval=$interval&limit=$limit");
+  static Future<List<Candle>> fetchCandles(
+    String symbol,
+    String interval,
+  ) async {
+    final url = Uri.parse("$baseUrl?symbol=$symbol&interval=$interval&limit=100");
 
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      List<dynamic> data = jsonDecode(response.body);
+      final data = jsonDecode(response.body) as List;
 
       return data.map((e) {
         return Candle(
@@ -29,8 +27,7 @@ class ApiService {
         );
       }).toList();
     } else {
-      throw Exception(
-          "Gagal load data candlestick: ${response.statusCode} - ${response.body}");
+      throw Exception("Failed to fetch data from Binance");
     }
   }
 }
