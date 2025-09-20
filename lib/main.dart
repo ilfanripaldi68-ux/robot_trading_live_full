@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'candlestick_page.dart';
+import 'widgets/candlestick_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Robot Trading Live',
+      title: 'Binance Candlestick',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const CandlestickPage(),
     );
