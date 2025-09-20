@@ -1,83 +1,57 @@
-import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_charts/charts.dart';
-
-class Candle {
-  final DateTime time;
-  final double open;
-  final double high;
-  final double low;
-  final double close;
-  final double volume;
-
-  Candle({
-    required this.time,
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-  });
-}
+import '../services/api.dart';
+import '../models/ohlc.dart';
 
 class CandlestickPage extends StatefulWidget {
-  final String symbol;
-  final String interval;
+  final String symbol; // contoh: BTCUSDT, ETHUSDT
+  final String interval; // contoh: 1m, 5m, 15m, 1h, 4h, 1d
 
   const CandlestickPage({
-    super.key,
-    required this.symbol,
-    required this.interval,
-  });
+    Key? key,
+    this.symbol = "BTCUSDT",
+    this.interval = "1m",
+  }) : super(key: key);
 
   @override
-  State<CandlestickPage> createState() => _CandlestickPageState();
+  _CandlestickPageState createState() => _CandlestickPageState();
 }
 
 class _CandlestickPageState extends State<CandlestickPage> {
-  List<Candle> _candles = [];
+  List<Ohlc> _candles = [];
+  Timer? _timer;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchCandles();
+    _fetchData();
+
+    // ⏳ Auto refresh tiap 1 detik
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _fetchData();
+    });
   }
 
-  Future<void> fetchCandles() async {
-    final uri = Uri.parse(
-        'https://api.binance.com/api/v3/klines?symbol=${widget.symbol}&interval=${widget.interval}&limit=100');
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchData() async {
     try {
-      final res = await http.get(uri);
-
-      debugPrint("Status: ${res.statusCode}");
-      debugPrint("Body: ${res.body.substring(0, 200)}...");
-
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body) as List;
-        final candles = data.map((e) {
-          return Candle(
-            time: DateTime.fromMillisecondsSinceEpoch(e[0]),
-            open: (e[1] as String).isNotEmpty ? double.parse(e[1]) : 0,
-            high: (e[2] as String).isNotEmpty ? double.parse(e[2]) : 0,
-            low: (e[3] as String).isNotEmpty ? double.parse(e[3]) : 0,
-            close: (e[4] as String).isNotEmpty ? double.parse(e[4]) : 0,
-            volume: (e[5] as String).isNotEmpty ? double.parse(e[5]) : 0,
-          );
-        }).toList();
-
-        setState(() {
-          _candles = candles;
-          _loading = false;
-        });
-      } else {
-        debugPrint("Error response: ${res.body}");
-        setState(() => _loading = false);
-      }
+      final data = await ApiService.fetchCandles(
+        widget.symbol,
+        widget.interval,
+      );
+      setState(() {
+        _candles = data;
+        _loading = false;
+      });
     } catch (e) {
-      debugPrint("Exception: $e");
-      setState(() => _loading = false);
+      debugPrint("Error fetch candles: $e");
     }
   }
 
@@ -93,4 +67,21 @@ class _CandlestickPageState extends State<CandlestickPage> {
               ? const Center(child: Text("Tidak ada data candlestick"))
               : SfCartesianChart(
                   primaryXAxis: DateTimeAxis(),
-                  series: <CandleSeries>
+                  primaryYAxis: NumericAxis(
+                    opposedPosition: true,
+                    decimalPlaces: 2,
+                  ),
+                  series: <CandleSeries<Ohlc, DateTime>>[
+                    CandleSeries<Ohlc, DateTime>(
+                      dataSource: _candles,
+                      xValueMapper: (Ohlc ohlc, _) => ohlc.date,
+                      lowValueMapper: (Ohlc ohlc, _) => ohlc.low,
+                      highValueMapper: (Ohlc ohlc, _) => ohlc.high,
+                      openValueMapper: (Ohlc ohlc, _) => ohlc.open,
+                      closeValueMapper: (Ohlc ohlc, _) => ohlc.close,
+                    )
+                  ],
+                ),
+    );
+  }
+}
